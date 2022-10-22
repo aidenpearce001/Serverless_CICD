@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Example CRUD
+Parameters:
+  IAMUsername:
+    Description: Name of the IAM user who will be the administrator of the KMS key
+      we create. This user will be able to encrypt values and manage the key.
+    Type: String
+    Default: aiden
+Resources:
+  SimpleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /dev/parameterStoreBlog/appConfig
+      Description: Sample dev config values for my app
+      Type: String
+      Value: '{"key1": "value1","key2": "value2","key3": "value3"}'
+  ParameterStoreBlogDevEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/ParameterStoreBlogKeyDev
+      TargetKeyId:
+        Ref: ParameterStoreBlogDevEncryptionKey
+  ParameterStoreBlogDevEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Encryption key for secret config values for the Parameter Store
+        blog post
+      Enabled: true
+      EnableKeyRotation: false
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: key-default-1
+        Statement:
+        - Sid: Allow administration of the key & encryption of new values
+          Effect: Allow
+          Action:
+          - kms:Create*
+          - kms:Encrypt
+          - kms:Describe*
+          - kms:Enable*
+          - kms:List*
+          - kms:Put*
+          - kms:Update*
+          - kms:Revoke*
+          - kms:Disable*
+          - kms:Get*
+          - kms:Delete*
+          - kms:ScheduleKeyDeletion
+          - kms:CancelKeyDeletion
+          Resource: '*'
+          Principal: null
+          AWS:
+          - Fn::Sub: arn:aws:iam::${AWS::AccountId}:user/${IAMUsername}
+        - Sid: Allow use of the key
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::GetAtt:
+              - ParameterStoreBlogFunctionRoleDev
+              - Arn
+          Action:
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:ReEncrypt*
+          - kms:GenerateDataKey*
+          - kms:DescribeKey
+          Resource: '*'
+  CreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: Create
+      Description: Integrating lambda with Parameter Store
+      Role:
+        Fn::GetAtt:
+        - ParameterStoreBlogFunctionRoleDev
+        - Arn
+      CodeUri: CreateFunction
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          ENV: dev
+          APP_CONFIG_PATH: parameterStoreBlog
+          AWS_XRAY_TRACING_NAME: ParameterStoreBlogFunctionDev
+      Timeout: 5
+      Events:
+        Create:
+          Type: Api
+          Properties:
+            Path: /Create
+            Method: get
+      Layers:
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.CreateFunction286a02c8DepLayer
+    Metadata:
+      SamResourceId: CreateFunction
+  ParameterStoreBlogFunctionRoleDev:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: ParameterStoreBlogDevParameterAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - ssm:GetParameter*
+            Resource:
+              Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dev/parameterStoreBlog*
+  AwsSamAutoDependencyLayerNestedStack:
+    DeletionPolicy: Delete
+    Metadata:
+      CreatedBy: AWS SAM CLI sync command
+    Properties:
+      TemplateURL: H:\Work\project\Serverless_CI-CD\mongodb_crud\.aws-sam\auto-dependency-layer\nested_template.yaml
+    Type: AWS::CloudFormation::Stack
+Outputs:
+  CreateApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/
+  CreateFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - CreateFunction
+      - Arn

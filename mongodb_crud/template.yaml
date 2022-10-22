@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Example CRUD
+
+Parameters:
+  IAMUsername:
+    Description: Name of the IAM user who will be the administrator of the KMS key
+      we create. This user will be able to encrypt values and manage the key.
+    Type: String
+    Default: aiden
+
+Resources:
+  SimpleParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/dev/parameterStoreBlog/appConfig'
+      Description: 'Sample dev config values for my app'
+      Type: String
+      Value: '{"key1": "value1","key2": "value2","key3": "value3"}'
+  ParameterStoreBlogDevEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: 'alias/ParameterStoreBlogKeyDev'
+      TargetKeyId: !Ref ParameterStoreBlogDevEncryptionKey
+
+  ParameterStoreBlogDevEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: 'Encryption key for secret config values for the Parameter Store blog post'
+      Enabled: True
+      EnableKeyRotation: False
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: 'key-default-1'
+        Statement:
+          -
+            Sid: 'Allow administration of the key & encryption of new values'
+            Effect: Allow
+            Action:
+              - 'kms:Create*'
+              - 'kms:Encrypt'
+              - 'kms:Describe*'
+              - 'kms:Enable*'
+              - 'kms:List*'
+              - 'kms:Put*'
+              - 'kms:Update*'
+              - 'kms:Revoke*'
+              - 'kms:Disable*'
+              - 'kms:Get*'
+              - 'kms:Delete*'
+              - 'kms:ScheduleKeyDeletion'
+              - 'kms:CancelKeyDeletion'
+            Resource: '*'
+            Principal:
+              AWS:
+              - Fn::Sub: '*'
+          -
+            Sid: 'Allow use of the key'
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt ParameterStoreBlogFunctionRoleDev.Arn
+            Action:
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:ReEncrypt*'
+              - 'kms:GenerateDataKey*'
+              - 'kms:DescribeKey'
+            Resource: '*'
+
+  CreateFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: 'Create'
+      Description: 'Integrating lambda with Parameter Store'
+      Role: !GetAtt ParameterStoreBlogFunctionRoleDev.Arn
+      CodeUri: CRUD/Create/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          ENV: 'dev'
+          APP_CONFIG_PATH: 'parameterStoreBlog'
+          AWS_XRAY_TRACING_NAME: 'ParameterStoreBlogFunctionDev'
+      Timeout: 5
+      Events:
+        Create:
+          Type: Api 
+          Properties:
+            Path: /Create
+            Method: get
+
+  ParameterStoreBlogFunctionRoleDev:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        -
+          PolicyName: 'ParameterStoreBlogDevParameterAccess'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - 'ssm:GetParameter*'
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dev/parameterStoreBlog*'
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  CreateApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  CreateFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt CreateFunction.Arn
