@@ -1,7 +1,4 @@
-import os, traceback, json, configparser, boto3
-from pymongo import MongoClient
-
-client = boto3.client('ssm')
+import os, traceback, json, configparser
 
 def load_config(ssm_parameter_path):
     """
