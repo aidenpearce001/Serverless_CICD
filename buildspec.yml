@@ -3,16 +3,38 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.7
+      python: 3.8
+  pre_build:
     commands:
-      - pip3 install pytest
+      - pip install -r Test/requirements.txt
+      - mkdir test-reports
   build:
     commands:
-      - python -m pytest --junitxml=<test report directory>/<report filename>
-
+      - pytest 
+      --html=test-reports/report.html 
+      --self-contained-html 
+      -s 
+      -v 
+      --cov=dspt 
+      --cov-report=html:test-reports/coverage 
+      --junitxml=test-reports/junit.xml 
+      --log-file=test-reports/logs.txt 
+      Test
+  post_build:
+    commands:
+      - echo Build completed on `date`
+  
 reports:
-  pytest_reports:
+  coverage:
     files:
-      - <report filename>
-    base-directory: <test report directory>
-    file-format: JUNITXML
+      - "coverage/*"
+    base-directory: 'test-reports'
+    discard-paths: yes
+  report:
+    files:
+      - 'junit.xml'
+      - 'report.html'
+      - 'assets/*'
+    base-directory: 'test-reports'
+    discard-paths: yes
+    file-format: JunitXml
