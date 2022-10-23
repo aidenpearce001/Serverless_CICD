@@ -7,26 +7,26 @@ Parameters:
     Description: Name of the IAM user who will be the administrator of the KMS key
       we create. This user will be able to encrypt values and manage the key.
     Type: String
-    Default: aiden
 
 Resources:
   SimpleParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: '/dev/parameterStoreBlog/appConfig'
-      Description: 'Sample dev config values for my app'
+      Name: '/dev/Database/MongoDB/DevUri'
+      Description: 'MongoDB Hostname'
       Type: String
-      Value: '{"key1": "value1","key2": "value2","key3": "value3"}'
-  ParameterStoreBlogDevEncryptionKeyAlias:
+      Value: 'MongdbHostName'
+
+  ParameterDevEncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: 'alias/ParameterStoreBlogKeyDev'
-      TargetKeyId: !Ref ParameterStoreBlogDevEncryptionKey
+      AliasName: 'alias/ParameterStoreKeyDev'
+      TargetKeyId: !Ref ParameterStoreDevEncryptionKey
 
-  ParameterStoreBlogDevEncryptionKey:
+  ParameterStoreDevEncryptionKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: 'Encryption key for secret config values for the Parameter Store blog post'
+      Description: 'Encryption key for secret config values for the Parameter Store'
       Enabled: True
       EnableKeyRotation: False
       KeyPolicy:
@@ -58,7 +58,7 @@ Resources:
             Sid: 'Allow use of the key'
             Effect: Allow
             Principal:
-              AWS: !GetAtt ParameterStoreBlogFunctionRoleDev.Arn
+              AWS: !GetAtt ParameterStoreFunctionRoleDev.Arn
             Action:
               - 'kms:Encrypt'
               - 'kms:Decrypt'
@@ -67,31 +67,120 @@ Resources:
               - 'kms:DescribeKey'
             Resource: '*'
 
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
   CreateFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       FunctionName: 'Create'
-      Description: 'Integrating lambda with Parameter Store'
-      Role: !GetAtt ParameterStoreBlogFunctionRoleDev.Arn
+      Description: 'Lambda function Insert new Record into Database'
+      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
       CodeUri: CRUD/Create/
       Handler: app.lambda_handler
+      Layers:
+        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
       Runtime: python3.8
       Architectures:
         - x86_64
       Environment:
         Variables:
           ENV: 'dev'
-          APP_CONFIG_PATH: 'parameterStoreBlog'
-          AWS_XRAY_TRACING_NAME: 'ParameterStoreBlogFunctionDev'
+          Db : 'Database/MongoDB/DevUri'
+          AWS_XRAY_TRACING_NAME: 'CreateFunctionDev'
       Timeout: 5
       Events:
-        Create:
+        ProxyApiRoot:
           Type: Api 
           Properties:
+            RestApiId: !Ref ApiGatewayApi
             Path: /Create
+            Method: post
+
+  ReadFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: 'Read'
+      Description: 'Lambda function Read from Database'
+      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
+      CodeUri: CRUD/Read/
+      Handler: app.lambda_handler
+      Layers:
+        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          ENV: 'dev'
+          Db : 'Database/MongoDB/DevUri'
+          AWS_XRAY_TRACING_NAME: 'ReadFunctionDev'
+      Timeout: 5
+      Events:
+        ProxyApiRoot:
+          Type: Api 
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Read
             Method: get
 
-  ParameterStoreBlogFunctionRoleDev:
+  UpdateFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: 'Update'
+      Description: 'Lambda function Update Record in Database'
+      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
+      CodeUri: CRUD/Update/
+      Handler: app.lambda_handler
+      Layers:
+        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          ENV: 'dev'
+          Db : 'Database/MongoDB/DevUri'
+          AWS_XRAY_TRACING_NAME: 'UpdateFunctionDev'
+      Timeout: 5
+      Events:
+        ProxyApiRoot:
+          Type: Api 
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Update
+            Method: post
+
+  DeleteFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: 'Delete'
+      Description: 'Lambda function Delete record from Database'
+      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
+      CodeUri: CRUD/Delete/
+      Handler: app.lambda_handler
+      Layers:
+        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          ENV: 'dev'
+          Db : 'Database/MongoDB/DevUri'
+          AWS_XRAY_TRACING_NAME: 'DeleteFunctionDev'
+      Timeout: 5
+      Events:
+        ProxyApiRoot:
+          Type: Api 
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Delete
+            Method: post
+
+  ParameterStoreFunctionRoleDev:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -108,7 +197,7 @@ Resources:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
         -
-          PolicyName: 'ParameterStoreBlogDevParameterAccess'
+          PolicyName: 'DevParameterAccess'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -116,15 +205,32 @@ Resources:
                 Effect: Allow
                 Action:
                   - 'ssm:GetParameter*'
-                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dev/parameterStoreBlog*'
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+        -
+          PolicyName: 'DevXRayAccess'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - 'xray:PutTraceSegments'
+                  - 'xray:PutTelemetryRecords'
+                Resource: '*'
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  CreateApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  # CreateApi:
+  #   Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+  #   Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/*"
   CreateFunction:
-    Description: "Hello World Lambda Function ARN"
+    Description: "Create Lambda Function ARN"
     Value: !GetAtt CreateFunction.Arn
+  ReadFunction:
+    Description: "Read Lambda Function ARN"
+    Value: !GetAtt ReadFunction.Arn
+  UpdateFunction:
+    Description: "Update Lambda Function ARN"
+    Value: !GetAtt UpdateFunction.Arn
+  DeleteFunction:
+    Description: "Delete Lambda Function ARN"
+    Value: !GetAtt DeleteFunction.Arn

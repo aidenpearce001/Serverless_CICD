@@ -6,26 +6,24 @@ Parameters:
     Description: Name of the IAM user who will be the administrator of the KMS key
       we create. This user will be able to encrypt values and manage the key.
     Type: String
-    Default: aiden
 Resources:
   SimpleParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /dev/parameterStoreBlog/appConfig
-      Description: Sample dev config values for my app
+      Name: /dev/Database/MongoDB/DevUri
+      Description: MongoDB Hostname
       Type: String
-      Value: '{"key1": "value1","key2": "value2","key3": "value3"}'
-  ParameterStoreBlogDevEncryptionKeyAlias:
+      Value: MongdbHostName
+  ParameterDevEncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: alias/ParameterStoreBlogKeyDev
+      AliasName: alias/ParameterStoreKeyDev
       TargetKeyId:
-        Ref: ParameterStoreBlogDevEncryptionKey
-  ParameterStoreBlogDevEncryptionKey:
+        Ref: ParameterStoreDevEncryptionKey
+  ParameterStoreDevEncryptionKey:
     Type: AWS::KMS::Key
     Properties:
       Description: Encryption key for secret config values for the Parameter Store
-        blog post
       Enabled: true
       EnableKeyRotation: false
       KeyPolicy:
@@ -49,15 +47,15 @@ Resources:
           - kms:ScheduleKeyDeletion
           - kms:CancelKeyDeletion
           Resource: '*'
-          Principal: null
-          AWS:
-          - Fn::Sub: arn:aws:iam::${AWS::AccountId}:user/${IAMUsername}
+          Principal:
+            AWS:
+            - Fn::Sub: '*'
         - Sid: Allow use of the key
           Effect: Allow
           Principal:
             AWS:
               Fn::GetAtt:
-              - ParameterStoreBlogFunctionRoleDev
+              - ParameterStoreFunctionRoleDev
               - Arn
           Action:
           - kms:Encrypt
@@ -66,39 +64,151 @@ Resources:
           - kms:GenerateDataKey*
           - kms:DescribeKey
           Resource: '*'
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
   CreateFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: Create
-      Description: Integrating lambda with Parameter Store
+      Description: Lambda function Insert new Record into Database
       Role:
         Fn::GetAtt:
-        - ParameterStoreBlogFunctionRoleDev
+        - ParameterStoreFunctionRoleDev
         - Arn
       CodeUri: CreateFunction
       Handler: app.lambda_handler
+      Layers:
+      - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.CreateFunction286a02c8DepLayer
       Runtime: python3.8
       Architectures:
       - x86_64
       Environment:
         Variables:
           ENV: dev
-          APP_CONFIG_PATH: parameterStoreBlog
-          AWS_XRAY_TRACING_NAME: ParameterStoreBlogFunctionDev
+          Db: Database/MongoDB/DevUri
+          AWS_XRAY_TRACING_NAME: CreateFunctionDev
       Timeout: 5
       Events:
-        Create:
+        ProxyApiRoot:
           Type: Api
           Properties:
+            RestApiId:
+              Ref: ApiGatewayApi
             Path: /Create
-            Method: get
-      Layers:
-      - Fn::GetAtt:
-        - AwsSamAutoDependencyLayerNestedStack
-        - Outputs.CreateFunction286a02c8DepLayer
+            Method: post
     Metadata:
       SamResourceId: CreateFunction
-  ParameterStoreBlogFunctionRoleDev:
+  ReadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: Read
+      Description: Lambda function Read from Database
+      Role:
+        Fn::GetAtt:
+        - ParameterStoreFunctionRoleDev
+        - Arn
+      CodeUri: ReadFunction
+      Handler: app.lambda_handler
+      Layers:
+      - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.ReadFunctionfe12730cDepLayer
+      Runtime: python3.8
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          ENV: dev
+          Db: Database/MongoDB/DevUri
+          AWS_XRAY_TRACING_NAME: ReadFunctionDev
+      Timeout: 5
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: ApiGatewayApi
+            Path: /Read
+            Method: get
+    Metadata:
+      SamResourceId: ReadFunction
+  UpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: Update
+      Description: Lambda function Update Record in Database
+      Role:
+        Fn::GetAtt:
+        - ParameterStoreFunctionRoleDev
+        - Arn
+      CodeUri: UpdateFunction
+      Handler: app.lambda_handler
+      Layers:
+      - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.UpdateFunction4859cf9cDepLayer
+      Runtime: python3.8
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          ENV: dev
+          Db: Database/MongoDB/DevUri
+          AWS_XRAY_TRACING_NAME: UpdateFunctionDev
+      Timeout: 5
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: ApiGatewayApi
+            Path: /Update
+            Method: post
+    Metadata:
+      SamResourceId: UpdateFunction
+  DeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: Delete
+      Description: Lambda function Delete record from Database
+      Role:
+        Fn::GetAtt:
+        - ParameterStoreFunctionRoleDev
+        - Arn
+      CodeUri: DeleteFunction
+      Handler: app.lambda_handler
+      Layers:
+      - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.DeleteFunction7027c8f1DepLayer
+      Runtime: python3.8
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          ENV: dev
+          Db: Database/MongoDB/DevUri
+          AWS_XRAY_TRACING_NAME: DeleteFunctionDev
+      Timeout: 5
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: ApiGatewayApi
+            Path: /Delete
+            Method: post
+    Metadata:
+      SamResourceId: DeleteFunction
+  ParameterStoreFunctionRoleDev:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -113,7 +223,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-      - PolicyName: ParameterStoreBlogDevParameterAccess
+      - PolicyName: DevParameterAccess
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -121,7 +231,16 @@ Resources:
             Action:
             - ssm:GetParameter*
             Resource:
-              Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dev/parameterStoreBlog*
+              Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+      - PolicyName: DevXRayAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+            Resource: '*'
   AwsSamAutoDependencyLayerNestedStack:
     DeletionPolicy: Delete
     Metadata:
@@ -130,13 +249,27 @@ Resources:
       TemplateURL: H:\Work\project\Serverless_CI-CD\mongodb_crud\.aws-sam\auto-dependency-layer\nested_template.yaml
     Type: AWS::CloudFormation::Stack
 Outputs:
-  CreateApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/
   CreateFunction:
-    Description: Hello World Lambda Function ARN
+    Description: Create Lambda Function ARN
     Value:
       Fn::GetAtt:
       - CreateFunction
+      - Arn
+  ReadFunction:
+    Description: Read Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - ReadFunction
+      - Arn
+  UpdateFunction:
+    Description: Update Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - UpdateFunction
+      - Arn
+  DeleteFunction:
+    Description: Delete Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - DeleteFunction
       - Arn
