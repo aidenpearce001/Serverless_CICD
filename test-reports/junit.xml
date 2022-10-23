@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.138" timestamp="2022-10-23T22:01:21.257180" hostname="DESKTOP-I5UTK42"><testcase classname="Test.test_logic" name="test_sum" time="0.004"><failure message="AssertionError: Wrong as fuk&#10;assert 3 == 4&#10; +  where 3 = sum(1, 2)">def test_sum():
-&gt;       assert sum(1, 2) == 4, "Wrong as fuk"
-E       AssertionError: Wrong as fuk
-E       assert 3 == 4
-E        +  where 3 = sum(1, 2)
-
-Test\test_logic.py:6: AssertionError</failure></testcase></testsuite></testsuites>

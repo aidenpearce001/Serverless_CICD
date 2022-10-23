@@ -243,3 +243,6 @@ $RECYCLE.BIN/
 
 #Sam Build
 mongodb_crud/.aws-sam
+
+#Test Case Report
+test-reports
