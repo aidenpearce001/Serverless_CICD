@@ -10,17 +10,12 @@ phases:
       - mkdir -p test-reports
   build:
     commands:
-      - pytest --html=test-reports/report.html --self-contained-html -s -v --cov=dspt --cov-report=html:test-reports/coverage --junitxml=test-reports/junit.xml --log-file=test-reports/logs.txt Test
+      - pytest --html=test-reports/report.html --self-contained-html Test
   post_build:
     commands:
       - echo Build completed on `date`
   
 reports:
-  coverage:
-    files:
-      - "coverage/*"
-    base-directory: 'test-reports'
-    discard-paths: yes
   report:
     files:
       - 'junit.xml'
