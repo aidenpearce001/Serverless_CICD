@@ -33,4 +33,7 @@ def lambda_handler(event, context):
     # MongoConnector = MongoClient(uri)
 
     config = load_config(URI)
-    return config
+    return { 
+        'statusCode': 200,
+        'body': json.dumps(config)
+    }
