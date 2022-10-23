@@ -19,7 +19,7 @@ phases:
       --cov-report=html:test-reports/coverage \
       --junitxml=test-reports/junit.xml \
       --log-file=test-reports/logs.txt \
-      Test
+      Test/unit
   post_build:
     commands:
       - echo Build completed on `date`
