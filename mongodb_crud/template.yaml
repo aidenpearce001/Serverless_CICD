@@ -3,10 +3,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: Example CRUD
 
 Parameters:
-  IAMUsername:
-    Description: Name of the IAM user who will be the administrator of the KMS key
-      we create. This user will be able to encrypt values and manage the key.
+  LambdaVersion:
     Type: String
+    Default: 1.0
+  Enviroment:
+    Type: String
+    Default: Prod
 
 Resources:
   SimpleParameter:
@@ -70,7 +72,7 @@ Resources:
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Prod
+      StageName: !Ref Enviroment
 
   CreateFunction:
     Type: 'AWS::Serverless::Function'
@@ -98,6 +100,7 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Create
             Method: post
+      VersionDescription: !Ref LambdaVersion
 
   ReadFunction:
     Type: 'AWS::Serverless::Function'
@@ -125,6 +128,7 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Read
             Method: get
+      VersionDescription: !Ref LambdaVersion
 
   UpdateFunction:
     Type: 'AWS::Serverless::Function'
@@ -152,7 +156,8 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Update
             Method: post
-
+      VersionDescription: !Ref LambdaVersion
+      
   DeleteFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -179,6 +184,7 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Delete
             Method: post
+      VersionDescription: !Ref LambdaVersion
 
   ParameterStoreFunctionRoleDev:
     Type: AWS::IAM::Role
