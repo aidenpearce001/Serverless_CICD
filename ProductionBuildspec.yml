@@ -11,4 +11,4 @@ phases:
     commands:
       - aws lambda publish-version --function-name Create > res.json
       - export VERSION=$(jq -r '.Version' res.json)
-      - aws lambda update-alias --function-name Create --function-version $VERSION --name production
+      - aws lambda update-alias --function-name Create --function-version $VERSION --name Prod
