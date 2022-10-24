@@ -13,7 +13,7 @@ phases:
       - pytest --html=test-reports/report.html --self-contained-html -s -v --cov=dspt --cov-report=html:test-reports/coverage --junitxml=test-reports/junit.xml --log-file=test-reports/logs.txt Test/unit
       - echo Finish Code Test
       - sh build.sh
-      - Zip Lambda Function Success
+      - echo Zip Lambda Function Success
   post_build:
     commands:
       - aws lambda update-function-code --function-name Create --zip-file fileb://Create.zip
