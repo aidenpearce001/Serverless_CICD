@@ -31,6 +31,8 @@ def lambda_handler(event, context):
 
     URI = "/" + env + "/" + Database
     # MongoConnector = MongoClient(uri)
+    print("Hello from somewhere")
+    print("HAAHAHA")
 
     config = load_config(URI)
     return { 

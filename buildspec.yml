@@ -23,10 +23,6 @@ phases:
 
       - echo Build completed on `date`
 
-artifacts:
- files:
-   - StaggingBuild.yml
-
 reports:
   report:
     files:
