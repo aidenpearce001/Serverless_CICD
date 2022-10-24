@@ -9,6 +9,7 @@ phases:
       - pip install -r Test/requirements.txt
   build:
     commands:
-      - aws lambda publish-version --function-name Create > res.json
-      - export VERSION=$(jq -r '.Version' res.json)
-      - aws lambda update-alias --function-name Create --function-version $VERSION --name Prod
+      # - aws lambda publish-version --function-name Create > res.json
+      # - export VERSION=$(jq -r '.Version' res.json)
+      # - aws lambda update-alias --function-name Create --function-version $VERSION --name Prod
+      - sh buildprod.sh
