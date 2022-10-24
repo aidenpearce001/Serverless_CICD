@@ -1,5 +1,6 @@
 for folder in mongodb_crud/CRUD/* ; do
-    aws lambda publish-version --function-name $folder > res.json
+    func_name=$(echo $folder | cut -d "/" -f 3)
+    aws lambda publish-version --function-name $func_name > res.json
     export VERSION=$(jq -r '.Version' res.json)
-    aws lambda update-alias --function-name $folder --function-version $VERSION --name Prod
+    aws lambda update-alias --function-name $func_name --function-version $VERSION --name Prod
 done
