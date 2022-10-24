@@ -213,6 +213,16 @@ Resources:
                   - 'ssm:GetParameter*'
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
         -
+          PolicyName: 'CodeBuildAllowUpdateFunction'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - 'lambda:UpdateFunctionCode'
+                Resource: '*'
+        -
           PolicyName: 'DevXRayAccess'
           PolicyDocument:
             Version: '2012-10-17'

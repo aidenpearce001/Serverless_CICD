@@ -17,7 +17,7 @@ phases:
   post_build:
     commands:
       - aws lambda update-function-code --function-name Create --zip-file fileb://Create.zip
-      - aws lambda update-function-code --function-name Read --zip-file fileb://Read.zip
+      - aws lambda update-function-code --function-name Read   --zip-file fileb://Read.zip
       - aws lambda update-function-code --function-name Update --zip-file fileb://Update.zip
       - aws lambda update-function-code --function-name Delete --zip-file fileb://Delete.zip
 
