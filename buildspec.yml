@@ -7,20 +7,20 @@ phases:
   pre_build:
     commands:
       - pip install -r Test/requirements.txt
-      - mkdir test-reports
+      - mkdir -p test-reports
   build:
     commands:
-      - pytest --html=test-reports/report.html --self-contained-html -s -v --cov=dspt --cov-report=html:test-reports/coverage --junitxml=test-reports/junit.xml --log-file=test-reports/logs.txt Test/unit
+      - pytest --html=test-reports/report.html --self-contained-html Test
+      - sam package --template-file mongodb_crud/template.yml --output-template-file packaged.yml --s3-bucket aws-sam-cli-managed-default-samclisourcebucket-11zt23stfa07h
   post_build:
     commands:
       - echo Build completed on `date`
-  
+
+artifacts:
+ files:
+   - packaged.yml
+
 reports:
-  coverage:
-    files:
-      - "coverage/*"
-    base-directory: 'test-reports'
-    discard-paths: yes
   report:
     files:
       - 'junit.xml'
