@@ -11,10 +11,15 @@ phases:
   build:
     commands:
       - pytest --html=test-reports/report.html --self-contained-html Test
+      - sam package --template-file mongodb_crud/template.yml --output-template-file packaged.yml --s3-bucket 
   post_build:
     commands:
       - echo Build completed on `date`
-  
+
+artifacts:
+ files:
+   - packaged.yml
+
 reports:
   report:
     files:
