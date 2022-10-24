@@ -1,8 +1,6 @@
 import os, traceback, json
 import boto3
 
-env = os.environ["ENV"]
-Database = os.environ["Db"]
 client = boto3.client("ssm")
 
 def load_config(ssm_parameter_path):
@@ -27,7 +25,12 @@ def load_config(ssm_parameter_path):
     finally:
         return configuration["Value"]
 
+def DbRead(event):
+    return event
+
 def lambda_handler(event, context):
+    env = os.environ["ENV"]
+    Database = os.environ["Db"]
 
     URI = "/" + env + "/" + Database
     # MongoConnector = MongoClient(uri)
@@ -35,5 +38,5 @@ def lambda_handler(event, context):
     config = load_config(URI)
     return { 
         'statusCode': 200,
-        'body': json.dumps(config)
+        'body': json.dumps("Stagging Stage")
     }

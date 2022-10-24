@@ -10,4 +10,4 @@ confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
 image_repositories = []
-parameter_overrides = "IAMUsername=\"aiden\""
+parameter_overrides = "LambdaVersion=\"1.0\" Enviroment=\"Prod\""

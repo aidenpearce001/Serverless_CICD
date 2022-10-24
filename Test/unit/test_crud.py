@@ -1,4 +1,10 @@
-# import pytest
+import pytest
+import json
+
+# import mongodb_crud.CRUD.Create.app
+import mongodb_crud.CRUD.Read.app
+# import mongodb_crud.CRUD.Update.app
+# import mongodb_crud.CRUD.Delete.app
 
 # def test_create_record(apigw_event, mocker):
 
@@ -10,12 +16,20 @@
 #     assert data["message"] == "hello world"
 #     assert "location" in data.dict_keys()
 
-# def test_read_record():
+env = "Test"
+Database = "Test"
 
-#     ret = Create.app.lambda_handler(apigw_event, "")
-#     data = json.loads(ret["body"])
+def apigw_event():
+    """ Generates API GW Event"""
 
-#     assert ret["statusCode"] == 200
-#     assert "message" in ret["body"]
-#     assert data["message"] == "hello world"
-#     assert "location" in data.dict_keys()
+    return {
+        "body": '{ "test": "body"}',
+    }
+
+def test_read_record():
+
+    ret = mongodb_crud.CRUD.Read.app.DbRead(apigw_event())
+    data = json.loads(ret["body"])
+
+    assert "test" in ret["body"]
+    assert data["test"] == "body"
