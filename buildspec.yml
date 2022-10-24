@@ -10,17 +10,22 @@ phases:
       - mkdir -p test-reports
   build:
     commands:
-      - pytest --html=test-reports/report.html --self-contained-html Test
+      - pytest --html=test-reports/report.html --self-contained-html -s -v --cov=dspt --cov-report=html:test-reports/coverage --junitxml=test-reports/junit.xml --log-file=test-reports/logs.txt Test/unit
       - echo Finish Code Test
+      - sh build.sh
+      - Zip Lambda Function Success
   post_build:
     commands:
-      - sam package --output-template-file Build/StaggingBuild.yaml --s3-bucket codepipeline-ap-southeast-1-92287412452
-      - sam deploy  --template-file Build/StaggingBuild.yaml --stack-name crud --capabilities CAPABILITY_IAM --region ap-southeast-1
+      - aws lambda update-function-code --function-name Create --zip-file fileb://Create.zip
+      - aws lambda update-function-code --function-name Read --zip-file fileb://Read.zip
+      - aws lambda update-function-code --function-name Update --zip-file fileb://Update.zip
+      - aws lambda update-function-code --function-name Delete --zip-file fileb://Delete.zip
+
       - echo Build completed on `date`
 
 artifacts:
  files:
-   - packaged.yml
+   - StaggingBuild.yml
 
 reports:
   report:

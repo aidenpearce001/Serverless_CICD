@@ -237,12 +237,12 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# Build folder
-
-*/build/*
+# Template
+*.yml
 
 #Sam Build
 mongodb_crud/.aws-sam
 
 #Test Case Report
 test-reports
+
