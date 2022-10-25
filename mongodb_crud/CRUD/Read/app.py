@@ -38,5 +38,5 @@ def lambda_handler(event, context):
     config = load_config(URI)
     return { 
         'statusCode': 200,
-        'body': json.dumps("Stagging Stage")
+        'body': json.dumps("Version 1.0")
     }
