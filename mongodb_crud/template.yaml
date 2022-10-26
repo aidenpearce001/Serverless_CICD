@@ -100,6 +100,7 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Create
             Method: post
+      AutoPublishAlias: live
       VersionDescription: !Ref LambdaVersion
 
   ReadFunction:
@@ -128,6 +129,7 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Read
             Method: get
+      AutoPublishAlias: live
       VersionDescription: !Ref LambdaVersion
 
   UpdateFunction:
@@ -156,6 +158,7 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Update
             Method: post
+      AutoPublishAlias: live
       VersionDescription: !Ref LambdaVersion
       
   DeleteFunction:
@@ -184,7 +187,10 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
             Path: /Delete
             Method: post
+      AutoPublishAlias: live
       VersionDescription: !Ref LambdaVersion
+
+  CreateAlias
 
   ParameterStoreFunctionRoleDev:
     Type: AWS::IAM::Role
