@@ -189,9 +189,52 @@ Resources:
             Method: post
       AutoPublishAlias: live
       VersionDescription: !Ref LambdaVersion
+      
+  StudentFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: 'Students'
+      Description: 'Students CRUD'
+      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
+      CodeUri: CRUD/Student/
+      Handler: app.lambda_handler
+      Layers:
+        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          ENV: 'dev'
+          Db : 'Database/MongoDB/DevUri'
+          AWS_XRAY_TRACING_NAME: 'StudentsFunction'
+      Timeout: 5
+      Events:
+        -
+        httpApi:
+          Type: Api 
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Delete
+            Method: post
+        - 
+        httpApi:
+          Type: Api 
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Delete
+            Method: post
+      httpApi:
+          Type: Api 
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Delete
+            Method: post
 
-  CreateAlias
 
+      AutoPublishAlias: live
+      VersionDescription: !Ref LambdaVersion
+  
   ParameterStoreFunctionRoleDev:
     Type: AWS::IAM::Role
     Properties:

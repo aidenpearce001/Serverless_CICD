@@ -1,87 +1,149 @@
-import logging
-import os
+import os, traceback, json, logging
 from functools import wraps
 
-import boto3
-
 logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s %(message)s")
-logger = logging.getLogger("RevokeDefaultSgApplication")
+logger = logging.getLogger("Student")
 logger.setLevel(os.environ.get("LOGGING", logging.DEBUG))
 
+try:
+    import boto3
+    import pymongo
+except ImportError as E:
+    logger.error(E)
 
-def notify_cloudwatch(function):
+def cloudwatch_logs(function):
     @wraps(function)
     def wrapper(event, context):
-        logger.info(f"'{context.function_name}' - entry.\nIncoming event: '{event}'")
+        logger.info(f'{context.function_name} - entry.\nIncoming event: {event}')
         result = function(event, context)
-        logger.info(f"'{context.function_name}' - exit.\nResult: '{result}'")
+        logger.info(f'{context.function_name} - exit.\nResult: {result}')
         return result
 
     return wrapper
 
-
 class UnknownEventException(Exception):
     pass
 
-
-class RevokeDefaultSg:
-    def __init__(self, region="ap-southeast-2"):
+class StudentCRUD:
+    def __init__(self, region="ap-southeast-1"):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(os.environ.get("LOGGING", logging.DEBUG))
-        self.ec2_client = boto3.client("ec2", region_name=region)
-        self.ec2_resource = boto3.resource("ec2", region_name=region)
+        self.ssm = boto3.client("ssm")
 
-    def _extract_sg_id(self, event):
-        is_correct_event_source = (event.get("detail", {}).get("eventSource", None) == "ec2.amazonaws.com")
-        is_correct_event_type = (event.get("detail", {}).get("eventType", None) == "AwsApiCall")
-        event_sg_id = (event.get("detail", {}).get("requestParameters", {}).get("groupId", None))
+        # Initial MongoDB Client
+        # self.MongoConnector = pymongo.MongoClient("/" + os.environ["ENV"] + "/" + os.environ["Db"])
+        # self.Database  = self.MongoConnector[os.environ["DatabaseName"]]
+        # self.Collection = self.Database[os.environ["CollectionName"]]
 
-        if not (is_correct_event_source and is_correct_event_type and event_sg_id):
-            raise UnknownEventException(f"Cannot handle event: {event}")
-        return event_sg_id
+        self.MongoConnector = pymongo.MongoClient("mongodb+srv://usth:123123a@hack-extenstion.gylmd.mongodb.net/test")
+        self.Database  = self.MongoConnector["SchoolManagement"]
+        self.Collection = self.Database["Student"]
 
-    def _is_default_sg(self, sg_id):
-        sec_groups = self.ec2_client.describe_security_groups(GroupIds=[sg_id])[
-            "SecurityGroups"
-        ]
-        return sec_groups[0]["GroupName"] == "default"
-
-    def _revoke_and_tag(self, sg_id):
-        security_group = self.ec2_resource.SecurityGroup(sg_id)
-        should_tag = False
-        if security_group.ip_permissions:
-            security_group.revoke_ingress(IpPermissions=security_group.ip_permissions)
-            should_tag = True
-            self.logger.debug("Revoking ingress rules")
-        if security_group.ip_permissions_egress:
-            should_tag = True
-            security_group.revoke_egress(
-                IpPermissions=security_group.ip_permissions_egress
+    def load_config(self, ssm_parameter_path):
+        """
+        Get Parameter from  SSM Parameter Store
+        :param ssm_parameter_path: Path to app config in SSM Parameter Store
+        :return: ConfigParser holding loaded config
+        """
+        
+        try:
+            # Get all parameters for this app
+            param_details = self.ssm.get_parameter(
+                Name=ssm_parameter_path,
+                WithDecryption=True
             )
-            self.logger.debug("Revoking egress rules")
-        if should_tag:
-            security_group.create_tags(
-                Tags=[
-                    {
-                        "Key": "auto:remediation-reason",
-                        "Value": "AWS CIS Benchmark 4.4 - Default SG's rules are automatically revoked",
-                    }
-                ]
-            )
-            self.logger.debug("Adding tag.")
+
+            configuration = param_details.get('Parameter', [])
+            
+        except:
+            print("Encountered an error loading config from SSM.")
+            traceback.print_exc()
+        finally:
+            return configuration["Value"]
+
+
+    def POST(self, event):
+
+        self.Collection.insert(event["body"])
+        logger.info(f'Insert Successfully Item {event["body"]["StudentID"]}')
+
+    def UPDATE(self, event):
+
+        filter = {
+            "StudentID": event["requestContext"]["resourceId"]
+        }
+
+        mycol.update_one(filter, event["body"])
+        self.Collection.update_one(event["body"], {})
+
+        logger.info(f'Update Successfully Item {event["requestContext"]["resourceId"]}')
+
+    def DELETE(self, event):
+
+        self.Collection.delete_one(event["body"])
+        logger.info(f'Delete Successfully Item {event["body"]["StudentID"]}')
+
+    def GET(self, event):
+
+        if "{id}" in event["resource"]:
+            return self.Collection.find({"StudentName": event["requestContext"]["resourceId"]})
+
         else:
-            self.logger.debug("No ingress/egress rules found to revoke")
+            return [_ for _ in self.Collection.find()]
 
-    def process_event(self, event):
-        sg_id = self._extract_sg_id(event)
-        if self._is_default_sg(sg_id):
-            self.logger.info(f"Revoking ingress/egress on default SG {sg_id}...")
-            self._revoke_and_tag(sg_id)
-        else:
-            self.logger.info(f"SG {sg_id} is not a default SG, nothing to do...")
-        return "SUCCESS"
-
-
-@notify_cloudwatch
+@cloudwatch_logs
 def handler(event, context):
-    return RevokeDefaultSg().process_event(event)
+
+    # student = StudentCRUD()
+    # return student.GET(event)
+    # return student.__dict__[event["httpMethod"]](event)
+    return globals()["StudentCRUD"].__dict__[event["httpMethod"]](event)
+
+event = {
+    "resource": "/",
+    "path": "/",
+    "httpMethod": "GET",
+    "requestContext": {
+        "resourcePath": "/",
+        "httpMethod": "GET",
+        "path": "/Prod/"
+    },
+    "headers": {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+        "accept-encoding": "gzip, deflate, br",
+        "Host": "70ixmpl4fl.execute-api.us-east-2.amazonaws.com",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36",
+        "X-Amzn-Trace-Id": "Root=1-5e66d96f-7491f09xmpl79d18acf3d050",
+    },
+    "multiValueHeaders": {
+        "accept": [
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+        ],
+        "accept-encoding": [
+            "gzip, deflate, br"
+        ]
+    },
+    "queryStringParameters": "",
+    "multiValueQueryStringParameters": "",
+    "pathParameters": "",
+    "stageVariables": "",
+    "body": "",
+    "isBase64Encoded": False
+}
+
+
+from dataclasses import dataclass
+
+def context():
+    @dataclass
+    class LambdaContext:
+        function_name: str = "test"
+        aws_request_id: str = "88888888-4444-4444-4444-121212121212"
+        invoked_function_arn: str = "arn:aws:lambda:eu-west-1:123456789101:function:test"
+
+
+    return LambdaContext()
+
+handler(event, context())
+# print(context().function_name)
+# locals()["StudentCRUD"].__dict__[event["httpMethod"]](event)
