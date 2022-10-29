@@ -24,22 +24,7 @@ def cloudwatch_logs(function):
 class UnknownEventException(Exception):
     pass
 
-class StudentCRUD:
-    def __init__(self, region="ap-southeast-1"):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(os.environ.get("LOGGING", logging.DEBUG))
-        self.ssm = boto3.client("ssm")
-
-        # Initial MongoDB Client
-        # self.MongoConnector = pymongo.MongoClient("/" + os.environ["ENV"] + "/" + os.environ["Db"])
-        # self.Database  = self.MongoConnector[os.environ["DatabaseName"]]
-        # self.Collection = self.Database[os.environ["CollectionName"]]
-
-        self.MongoConnector = pymongo.MongoClient("mongodb+srv://usth:123123a@hack-extenstion.gylmd.mongodb.net/test")
-        self.Database  = self.MongoConnector["SchoolManagement"]
-        self.Collection = self.Database["Student"]
-
-    def load_config(self, ssm_parameter_path):
+def load_config(self, ssm_parameter_path):
         """
         Get Parameter from  SSM Parameter Store
         :param ssm_parameter_path: Path to app config in SSM Parameter Store
@@ -61,6 +46,20 @@ class StudentCRUD:
         finally:
             return configuration["Value"]
 
+class StudentCRUD:
+    def __init__(self, region="ap-southeast-1"):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(os.environ.get("LOGGING", logging.DEBUG))
+        self.ssm = boto3.client("ssm")
+
+        # Initial MongoDB Client
+        # self.MongoConnector = pymongo.MongoClient(load_config("/" + os.environ["ENV"] + "/" + os.environ["Db"]))
+        # self.Database  = self.MongoConnector[os.environ["DatabaseName"]]
+        # self.Collection = self.Database[os.environ["CollectionName"]]
+
+        self.MongoConnector = pymongo.MongoClient("mongodb+srv://usth:123123a@hack-extenstion.gylmd.mongodb.net/test")
+        self.Database  = self.MongoConnector["SchoolManagement"]
+        self.Collection = self.Database["Student"]
 
     def POST(self, event):
 
@@ -94,10 +93,7 @@ class StudentCRUD:
 @cloudwatch_logs
 def handler(event, context):
 
-    # student = StudentCRUD()
-    # return student.GET(event)
-    # return student.__dict__[event["httpMethod"]](event)
-    return globals()["StudentCRUD"].__dict__[event["httpMethod"]](event)
+    return getattr(globals()["StudentCRUD"](), event["httpMethod"])(event)
 
 event = {
     "resource": "/",
@@ -141,9 +137,6 @@ def context():
         aws_request_id: str = "88888888-4444-4444-4444-121212121212"
         invoked_function_arn: str = "arn:aws:lambda:eu-west-1:123456789101:function:test"
 
-
     return LambdaContext()
 
 handler(event, context())
-# print(context().function_name)
-# locals()["StudentCRUD"].__dict__[event["httpMethod"]](event)

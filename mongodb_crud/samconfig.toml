@@ -10,4 +10,4 @@ confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
 image_repositories = []
-parameter_overrides = "LambdaVersion=\"1.0\" Enviroment=\"Prod\""
+parameter_overrides = "LambdaVersion=\"1.0\" Enviroment=\"Prod\" DbUri=\"mongodb+srv://usth:123123a@hack-extenstion.gylmd.mongodb.net/test\" DbName=\"SchoolManagement\""

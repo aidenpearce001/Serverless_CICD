@@ -9,15 +9,24 @@ Parameters:
   Enviroment:
     Type: String
     Default: Prod
+  DbUri:
+    Type: String
+    Default: mongodb+srv:username:password@server.example.com/?connectTimeoutMS=300000&authSource=aDifferentAuthDB
+  DbName:
+    Type: String
+    Default: SchoolManagement
 
 Resources:
   SimpleParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: '/dev/Database/MongoDB/DevUri'
+      Name: !Join
+        ['',
+          ['/', !Ref Enviroment, '/Database/MongoDBUri' ]
+        ]
       Description: 'MongoDB Hostname'
       Type: String
-      Value: 'MongdbHostName'
+      Value: !Ref DbUri
 
   ParameterDevEncryptionKeyAlias:
     Type: AWS::KMS::Alias
@@ -73,122 +82,6 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Enviroment
-
-  CreateFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      FunctionName: 'Create'
-      Description: 'Lambda function Insert new Record into Database'
-      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
-      CodeUri: CRUD/Create/
-      Handler: app.lambda_handler
-      Layers:
-        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
-      Runtime: python3.8
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          ENV: 'dev'
-          Db : 'Database/MongoDB/DevUri'
-          AWS_XRAY_TRACING_NAME: 'CreateFunctionDev'
-      Timeout: 5
-      Events:
-        ProxyApiRoot:
-          Type: Api 
-          Properties:
-            RestApiId: !Ref ApiGatewayApi
-            Path: /Create
-            Method: post
-      AutoPublishAlias: live
-      VersionDescription: !Ref LambdaVersion
-
-  ReadFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      FunctionName: 'Read'
-      Description: 'Lambda function Read from Database'
-      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
-      CodeUri: CRUD/Read/
-      Handler: app.lambda_handler
-      Layers:
-        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
-      Runtime: python3.8
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          ENV: 'dev'
-          Db : 'Database/MongoDB/DevUri'
-          AWS_XRAY_TRACING_NAME: 'ReadFunctionDev'
-      Timeout: 5
-      Events:
-        ProxyApiRoot:
-          Type: Api 
-          Properties:
-            RestApiId: !Ref ApiGatewayApi
-            Path: /Read
-            Method: get
-      AutoPublishAlias: live
-      VersionDescription: !Ref LambdaVersion
-
-  UpdateFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      FunctionName: 'Update'
-      Description: 'Lambda function Update Record in Database'
-      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
-      CodeUri: CRUD/Update/
-      Handler: app.lambda_handler
-      Layers:
-        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
-      Runtime: python3.8
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          ENV: 'dev'
-          Db : 'Database/MongoDB/DevUri'
-          AWS_XRAY_TRACING_NAME: 'UpdateFunctionDev'
-      Timeout: 5
-      Events:
-        ProxyApiRoot:
-          Type: Api 
-          Properties:
-            RestApiId: !Ref ApiGatewayApi
-            Path: /Update
-            Method: post
-      AutoPublishAlias: live
-      VersionDescription: !Ref LambdaVersion
-      
-  DeleteFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      FunctionName: 'Delete'
-      Description: 'Lambda function Delete record from Database'
-      Role: !GetAtt ParameterStoreFunctionRoleDev.Arn
-      CodeUri: CRUD/Delete/
-      Handler: app.lambda_handler
-      Layers:
-        - arn:aws:lambda:ap-southeast-1:770693421928:layer:Klayers-p38-boto3:9
-      Runtime: python3.8
-      Architectures:
-        - x86_64
-      Environment:
-        Variables:
-          ENV: 'dev'
-          Db : 'Database/MongoDB/DevUri'
-          AWS_XRAY_TRACING_NAME: 'DeleteFunctionDev'
-      Timeout: 5
-      Events:
-        ProxyApiRoot:
-          Type: Api 
-          Properties:
-            RestApiId: !Ref ApiGatewayApi
-            Path: /Delete
-            Method: post
-      AutoPublishAlias: live
-      VersionDescription: !Ref LambdaVersion
       
   StudentFunction:
     Type: 'AWS::Serverless::Function'
@@ -206,35 +99,76 @@ Resources:
       Environment:
         Variables:
           ENV: 'dev'
-          Db : 'Database/MongoDB/DevUri'
+          Db : !Join
+            [ '', 
+              [!Ref Enviroment, '/Database/MongoDBUri'] 
+            ]
+          DatabaseName: !Ref DbName
+          CollectionName: Student
           AWS_XRAY_TRACING_NAME: 'StudentsFunction'
       Timeout: 5
       Events:
-        -
-        httpApi:
-          Type: Api 
+        ListStudent:
+          Type: Api
           Properties:
             RestApiId: !Ref ApiGatewayApi
-            Path: /Delete
-            Method: post
-        - 
-        httpApi:
-          Type: Api 
+            Path: /Student
+            Method: get
+        GetStudent:
+          Type: Api
           Properties:
             RestApiId: !Ref ApiGatewayApi
-            Path: /Delete
-            Method: post
-      httpApi:
-          Type: Api 
+            Path: /Student/{id}
+            Method: get
+        CreateStudent:
+          Type: Api
           Properties:
             RestApiId: !Ref ApiGatewayApi
-            Path: /Delete
+            Path: /Create
             Method: post
+        DeleteStudent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Student/{id}
+            Method: delete
+        UpdateStudent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /Student/{id}
+            Method: update
 
+    AutoPublishAlias: live
 
-      AutoPublishAlias: live
-      VersionDescription: !Ref LambdaVersion
-  
+  StudentFunctionVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref StudentFunction
+      Description: v1.0
+
+  StudentFunctionAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref StudentFunction
+      FunctionVersion: !GetAtt StudentFunctionVersion.Version
+      Name: !Ref Enviroment
+
+  APIInvokePermission: 
+    Type: 'AWS::Lambda::Permission'
+    Properties: 
+      FunctionName: 
+        !Join
+          [ '', 
+              [!Ref StudentFunction, ':', !Ref Enviroment] 
+          ]
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: 
+        !Join
+          [ '',
+            ['arn:',!Ref AWS::Partition, ":execute-api:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":", !Ref ApiGatewayApi, "/", !Ref Enviroment, "/*/*/*"]
+          ]
   ParameterStoreFunctionRoleDev:
     Type: AWS::IAM::Role
     Properties:
@@ -262,16 +196,6 @@ Resources:
                   - 'ssm:GetParameter*'
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
         -
-          PolicyName: 'CodeBuildAllowUpdateFunction'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              -
-                Effect: Allow
-                Action:
-                  - 'lambda:UpdateFunctionCode'
-                Resource: '*'
-        -
           PolicyName: 'DevXRayAccess'
           PolicyDocument:
             Version: '2012-10-17'
@@ -284,18 +208,9 @@ Resources:
                 Resource: '*'
 
 Outputs:
-  # CreateApi:
-  #   Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-  #   Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/*"
-  CreateFunction:
-    Description: "Create Lambda Function ARN"
-    Value: !GetAtt CreateFunction.Arn
-  ReadFunction:
-    Description: "Read Lambda Function ARN"
-    Value: !GetAtt ReadFunction.Arn
-  UpdateFunction:
-    Description: "Update Lambda Function ARN"
-    Value: !GetAtt UpdateFunction.Arn
-  DeleteFunction:
-    Description: "Delete Lambda Function ARN"
-    Value: !GetAtt DeleteFunction.Arn
+  CreateApi:
+    Description: "API Gateway endpoint URL for Prod stage for Student function"
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${Enviroment}/Student"
+  StudentFunction:
+    Description: "Create Student Function ARN"
+    Value: !GetAtt StudentFunction.Arn
