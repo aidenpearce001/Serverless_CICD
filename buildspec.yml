@@ -11,16 +11,12 @@ phases:
   build:
     commands:
       - pytest --html=test-reports/report.html --self-contained-html -s -v --cov=dspt --cov-report=html:test-reports/coverage --junitxml=test-reports/junit.xml --log-file=test-reports/logs.txt Test/unit
-      - echo Finish Code Testttttt
+      - echo Finish Code Test
       - sh build.sh
       - echo Zip Lambda Function Success
   post_build:
     commands:
-      - aws lambda update-function-code --function-name Create --zip-file fileb://Create.zip
-      - aws lambda update-function-code --function-name Read   --zip-file fileb://Read.zip
-      - aws lambda update-function-code --function-name Update --zip-file fileb://Update.zip
-      - aws lambda update-function-code --function-name Delete --zip-file fileb://Delete.zip
-
+      - aws lambda update-function-code --function-name Create --zip-file fileb://Student.zip
       - echo Build completed on `date`
 
 reports:
