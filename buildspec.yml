@@ -16,7 +16,7 @@ phases:
       - echo Zip Lambda Function Success
   post_build:
     commands:
-      - aws lambda update-function-code --function-name Create --zip-file fileb://Student.zip
+      - aws lambda update-function-code --function-name Student --zip-file fileb://Student.zip
       - echo Build completed on `date`
 
 reports:
