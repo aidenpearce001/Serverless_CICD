@@ -1,3 +1,4 @@
+
 {
     "resource": "/",
     "path": "/",
@@ -22,10 +23,10 @@
             "gzip, deflate, br"
         ]
     },
-    "queryStringParameters": null,
-    "multiValueQueryStringParameters": null,
-    "pathParameters": null,
-    "stageVariables": null,
-    "body": null,
-    "isBase64Encoded": false
+    "queryStringParameters": "",
+    "multiValueQueryStringParameters": "",
+    "pathParameters": "",
+    "stageVariables": "",
+    "body": "",
+    "isBase64Encoded": False
 }
