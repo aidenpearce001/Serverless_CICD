@@ -124,7 +124,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGatewayApi
-            Path: /Create
+            Path: /Student
             Method: post
         DeleteStudent:
           Type: Api

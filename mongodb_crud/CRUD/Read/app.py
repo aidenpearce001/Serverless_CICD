@@ -1,5 +1,4 @@
-import os, traceback, json
-import boto3
+import os, traceback, jsoimport boto3
 
 client = boto3.client("ssm")
 

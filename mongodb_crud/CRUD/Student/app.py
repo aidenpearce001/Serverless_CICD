@@ -7,7 +7,7 @@ logger.setLevel(os.environ.get("LOGGING", logging.DEBUG))
 
 try:
     import boto3
-    import pymongo
+    # import pymongo
 except ImportError as E:
     logger.error(E)
 
@@ -57,10 +57,6 @@ class StudentCRUD:
         # self.Database  = self.MongoConnector[os.environ["DatabaseName"]]
         # self.Collection = self.Database[os.environ["CollectionName"]]
 
-        self.MongoConnector = pymongo.MongoClient("mongodb+srv://usth:123123a@hack-extenstion.gylmd.mongodb.net/test")
-        self.Database  = self.MongoConnector["SchoolManagement"]
-        self.Collection = self.Database["Student"]
-
     def POST(self, event):
 
         self.Collection.insert(event["body"])
@@ -88,55 +84,15 @@ class StudentCRUD:
             return self.Collection.find({"StudentName": event["requestContext"]["resourceId"]})
 
         else:
-            return [_ for _ in self.Collection.find()]
+            # return [_ for _ in self.Collection.find()]
+
+            return { 
+                'statusCode': 200,
+                'body': json.dumps("Last Version")
+            }
 
 @cloudwatch_logs
-def handler(event, context):
+def lambda_handler(event, context):
 
     return getattr(globals()["StudentCRUD"](), event["httpMethod"])(event)
 
-event = {
-    "resource": "/",
-    "path": "/",
-    "httpMethod": "GET",
-    "requestContext": {
-        "resourcePath": "/",
-        "httpMethod": "GET",
-        "path": "/Prod/"
-    },
-    "headers": {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-        "accept-encoding": "gzip, deflate, br",
-        "Host": "70ixmpl4fl.execute-api.us-east-2.amazonaws.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36",
-        "X-Amzn-Trace-Id": "Root=1-5e66d96f-7491f09xmpl79d18acf3d050",
-    },
-    "multiValueHeaders": {
-        "accept": [
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
-        ],
-        "accept-encoding": [
-            "gzip, deflate, br"
-        ]
-    },
-    "queryStringParameters": "",
-    "multiValueQueryStringParameters": "",
-    "pathParameters": "",
-    "stageVariables": "",
-    "body": "",
-    "isBase64Encoded": False
-}
-
-
-from dataclasses import dataclass
-
-def context():
-    @dataclass
-    class LambdaContext:
-        function_name: str = "test"
-        aws_request_id: str = "88888888-4444-4444-4444-121212121212"
-        invoked_function_arn: str = "arn:aws:lambda:eu-west-1:123456789101:function:test"
-
-    return LambdaContext()
-
-handler(event, context())
