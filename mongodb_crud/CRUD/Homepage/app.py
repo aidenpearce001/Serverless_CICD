@@ -8,6 +8,6 @@ def lambda_handler(event, context):
 
     return { 
         'statusCode': 200,
-        'body': json.dumps(f"Current Eviroment {event['requestContext']['path'].split('/')[1]}")
+        'body': json.dumps(f"Current Eviroment {event['requestContext']['path'].split('/')[1]} 2.0")
     }
 
