@@ -88,7 +88,7 @@ class StudentCRUD:
 
             return { 
                 'statusCode': 200,
-                'body': json.dumps("Last Version")
+                'body': json.dumps("Version 2.0")
             }
 
 @cloudwatch_logs
